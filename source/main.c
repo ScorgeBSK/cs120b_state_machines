@@ -1,7 +1,7 @@
 /*	Author: Trung Lam
  *  Partner(s) Name: 
  *	Lab Section: B22
- *	Assignment: Lab #4  Exercise #3
+ *	Assignment: Lab #4  Exercise #2
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -12,107 +12,93 @@
 #include "simAVRHeader.h"
 #endif
 
-enum States {start, init, poundPress, poundRelease, xKeyPressed, xKeyRelease, yKeyPressed, yKeyRelease, doorUnlock, doorLock} state;
-
-unsigned doorSignal = 0;
+enum States {start, init, increment, decrement, reset, result} state;
 
 void tick(){
-	unsigned char poundButton = PINA & 0x04;
-	unsigned char yButton = PINA & 0x02;
-	unsigned char xButton = PINA & 0x01;
-	unsigned char lockButton = PINA & 0x80;
-	unsigned char door = PINB;
+	unsigned char button = PINA & 0x03;
+	signed char output = PINC;
 	
 	switch(state){
 		case start:
-			state = init;
+	       		state = init;
 			break;
 		case init:
-			state = poundButton ? poundPress : init;
-			break;
-		case poundPress:
-			state = poundButton ? poundPress : poundRelease;
-			break;
-		case poundRelease:
-			state = xButton ? xKeyPressed : poundRelease;
-		       break;
-	        case xKeyPressed:
-		       	if(doorSignal == 1){
-				state = doorUnlock;
+			if(button == 1){
+				state = increment;
 			}
-			else if(door == 1){
-				state = doorLock;
+			else if(button == 2){
+				state = decrement;
 			}
-			else if(xButton){
-				state = xKeyPressed;
+			else if(button == 3){
+				state = reset;
 			}
 			else{
-				state = xKeyRelease;
+				state = init;
 			}
-	 		break;
-		case xKeyRelease:
-			state = yButton ? yKeyPressed : xKeyRelease;
 			break;
-		case yKeyPressed:
-			state = yButton ? yKeyPressed : yKeyRelease;
+		case increment:
+			state = result;
 			break;
-		case yKeyRelease:
-			state = xButton ? xKeyPressed : yKeyRelease;
+		case decrement:
+			state = result;
 			break;
-		case doorUnlock:
-			if(lockButton){
-				state = doorLock;
+		case reset:
+			state = result;
+			break;
+		case result:
+			if(button == 1){
+				state = increment;
 			}
-			else if(poundButton){
-				state = poundPress;
+			else if(button == 2){
+				state = decrement;
+			}
+			else if(button == 3){
+				state = reset;
 			}
 			else{
-				state = doorUnlock;
+				state = result;
 			}
-			break;		
-		case doorLock:
-			state = init;
 			break;
 		default:
 			state = start;
-			break;
+			break;	
 	}
 
 	switch(state){
-		case init:
-			door = 0;
+                case init:
+                        break;
+                case increment:
+			output++;
+			if(output > 9){
+				output = 9;
+			}
+                        break;
+                case decrement:
+			output--;
+			if(output < 0){
+				output = 0;
+			}
 			break;
-		case poundPress:
+		case reset:
+			output = 0;
 			break;
-		case poundRelease:
-			break;
-		case xKeyPressed:
-			break;
-		case xKeyRelease:
-			break;
-		case yKeyPressed:
-			doorSignal = 1;
-			break;
-		case yKeyRelease:
-			break;
-		case doorUnlock:
-			door = 1;
-			break;
-		case doorLock:
-			door = 0;
+		case result:
+			output = output;
 			break;
 		default:
 			break;
         }
 
-	PORTB = door;
+	PORTC = output;
+
 }
 
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0xFF; PORTB = 0x00;
-
+    DDRC = 0xFF; PORTC = 0x07;
+	
+    state = start;
     /* Insert your solution below */
     while (1) {
 	tick();
