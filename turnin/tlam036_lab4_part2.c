@@ -66,7 +66,7 @@ void tick(){
 
 	switch(state){
 		case init:
-			output = 0;
+			output = 7;
 			break;
 		case waitInput:
 			break;
