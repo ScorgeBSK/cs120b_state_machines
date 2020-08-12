@@ -12,20 +12,19 @@
 #include "simAVRHeader.h"
 #endif
 
-enum States {start, init, input, increment, decrement, reset, result} state;
-
 void tick(){
+	
 	unsigned char button = PINA & 0x03;
 	signed char output = PINC;
-	
+
 	switch(state){
 		case start:
-	       		state = init;
+			state = init;
 			break;
 		case init:
-			state = input;
+			state = waitInput;
 			break;
-		case input:
+		case waitInput:
 			if(button == 1){
 				state = increment;
 			}
@@ -36,39 +35,47 @@ void tick(){
 				state = reset;
 			}
 			else{
-				state = init;
+				state = waitInput;
 			}
 			break;
 		case increment:
-			state = result;
+			state = waitIncRelease;
 			break;
 		case decrement:
-			state = result;
+			state = waitDecRelease;
 			break;
 		case reset:
-			state = result;
+			state = waitResetRelease;
 			break;
-		case result:
-			state = init;
+		case waitIncRelease:
+			state = button ? waitIncRelease : waitInput;
+			break;
+		case waitDecRelease:
+			state = button ? waitDecRelease : waitInput;
+			break;
+		case waitResetRelease:
+			state = button ? waitResetRelease : waitInput;
 			break;
 		default:
 			state = start;
-			break;	
+			break;
+
 	}
 
 	switch(state){
-                case init:
-                        break;
-                case input:
+		case init:
+			output = 0;
 			break;
-                case increment:
-			output = output + 1;
+		case waitInput:
+			break;
+		case increment:
+			++output;
 			if(output > 9){
 				output = 9;
-			}
-                        break;
-                case decrement:
-			output = output - 1;
+			}	
+			break;
+		case decrement:
+			--output;
 			if(output < 0){
 				output = 0;
 			}
@@ -76,11 +83,15 @@ void tick(){
 		case reset:
 			output = 0;
 			break;
-		case result:
+		case waitIncRelease:
+			break;
+		case waitDecRelease:
+			break;
+		case waitResetRelease:
 			break;
 		default:
 			break;
-        }
+	}
 
 	PORTC = output;
 }
