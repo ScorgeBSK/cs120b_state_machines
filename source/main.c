@@ -12,17 +12,21 @@
 #include "simAVRHeader.h"
 #endif
 
-enum States {start, init, increment, decrement, reset, result} state;
+enum States {start, init, waitInput, increment, decrement, reset, waitIncRelease, waitDecRelease, waitResetRelease} state;
 
 void tick(){
+	
 	unsigned char button = PINA & 0x03;
 	signed char output = PINC;
-	
+
 	switch(state){
 		case start:
-	       		state = init;
+			state = init;
 			break;
 		case init:
+			state = waitInput;
+			break;
+		case waitInput:
 			if(button == 1){
 				state = increment;
 			}
@@ -33,48 +37,47 @@ void tick(){
 				state = reset;
 			}
 			else{
-				state = init;
+				state = waitInput;
 			}
 			break;
 		case increment:
-			state = result;
+			state = waitIncRelease;
 			break;
 		case decrement:
-			state = result;
+			state = waitDecRelease;
 			break;
 		case reset:
-			state = result;
+			state = waitResetRelease;
 			break;
-		case result:
-			if(button == 1){
-				state = increment;
-			}
-			else if(button == 2){
-				state = decrement;
-			}
-			else if(button == 3){
-				state = reset;
-			}
-			else{
-				state = result;
-			}
+		case waitIncRelease:
+			state = button ? waitIncRelease : waitInput;
+			break;
+		case waitDecRelease:
+			state = button ? waitDecRelease : waitInput;
+			break;
+		case waitResetRelease:
+			state = button ? waitResetRelease : waitInput;
 			break;
 		default:
 			state = start;
-			break;	
+			break;
+
 	}
 
 	switch(state){
-                case init:
-                        break;
-                case increment:
-			output++;
+		case init:
+			output = 0;
+			break;
+		case waitInput:
+			break;
+		case increment:
+			++output;
 			if(output > 9){
 				output = 9;
-			}
-                        break;
-                case decrement:
-			output--;
+			}	
+			break;
+		case decrement:
+			--output;
 			if(output < 0){
 				output = 0;
 			}
@@ -82,23 +85,24 @@ void tick(){
 		case reset:
 			output = 0;
 			break;
-		case result:
-			output = output;
+		case waitIncRelease:
+			break;
+		case waitDecRelease:
+			break;
+		case waitResetRelease:
 			break;
 		default:
 			break;
-        }
+	}
 
 	PORTC = output;
-
 }
 
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; PORTA = 0xFF;
     DDRC = 0xFF; PORTC = 0x07;
-	
-    state = start;
+
     /* Insert your solution below */
     while (1) {
 	tick();
