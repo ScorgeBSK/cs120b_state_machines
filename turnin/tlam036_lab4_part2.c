@@ -12,6 +12,8 @@
 #include "simAVRHeader.h"
 #endif
 
+enum States {start, init, waitInput, increment, decrement, reset, waitIncRelease, waitDecRelease, waitResetRelease} state;
+
 void tick(){
 	
 	unsigned char button = PINA & 0x03;
